@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0369a1" />
   <title>هاي كول للتكييف | النظام الشامل</title>
+
+  <!-- إعدادات التطبيق (Manifest) لتفعيل زر التثبيت في المتصفح -->
+  <link rel="manifest" id="manifest-link" href="#">
 
   <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- مكتبة إظهار الأرقام على الرسم البياني -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -84,7 +87,6 @@
 
       <div class="mt-auto border-t pt-4 space-y-2">
         <button onclick="exportDatabase()" class="w-full bg-slate-800 text-white text-sm font-bold p-3 rounded-xl hover:bg-slate-900 shadow">💾 حفظ نسخة احتياطية</button>
-        <!-- الزر الجديد: مسح النظام -->
         <button onclick="factoryReset()" class="w-full bg-red-600 text-white text-sm font-bold p-3 rounded-xl hover:bg-red-700 shadow">⚠️ تصفير النظام (مسح شامل)</button>
         <button onclick="logout()" class="w-full bg-red-50 text-red-600 text-sm font-bold p-3 rounded-xl hover:bg-red-100 border border-red-200 mt-2">🚪 تسجيل خروج</button>
       </div>
@@ -146,25 +148,42 @@
         </div>
       </div>
 
-      <!-- 2. Master Items & Edit -->
+      <!-- 2. Master Items & Edit (تم التعديل بناءً على طلبك) -->
       <div id="sec-items" class="hidden">
         <div class="glass p-6 rounded-3xl mb-8 border-t-4 border-cyan-600">
           <h3 class="text-xl font-bold mb-4" id="form-item-title">إضافة صنف جديد</h3>
-          <form id="form-item" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input type="text" id="item-code" placeholder="كود الصنف" required class="border p-3 rounded-xl bg-slate-50 font-bold">
-            <input type="text" id="item-model" placeholder="الموديل" required class="md:col-span-2 border p-3 rounded-xl bg-slate-50">
-            <input type="number" id="item-price" placeholder="سعر البيع" required class="border p-3 rounded-xl bg-slate-50 font-bold text-blue-600">
-            <input type="number" id="item-inQty" placeholder="تعديل الوارد" value="0" class="border p-3 rounded-xl bg-slate-50 text-green-600 font-bold">
-            <input type="number" id="item-outQty" placeholder="تعديل المنصرف" value="0" class="border p-3 rounded-xl bg-slate-50 text-red-600 font-bold">
-            <div class="md:col-span-3 flex gap-4 mt-2">
-              <button type="submit" id="form-item-btn" class="flex-1 bg-cyan-600 text-white font-bold p-3 rounded-xl hover:bg-cyan-700">حفظ الصنف</button>
-              <button type="button" id="form-item-cancel" onclick="cancelEdit()" class="hidden bg-slate-500 text-white font-bold p-3 rounded-xl hover:bg-slate-600 px-8">إلغاء</button>
+          <form id="form-item" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            
+            <div class="md:col-span-1">
+              <label class="block text-xs font-bold text-slate-500 mb-1">كود الصنف (الباركود)</label>
+              <input type="text" id="item-code" placeholder="مثال: HC-01" required class="w-full border p-3 rounded-xl bg-slate-50 font-bold">
+            </div>
+            
+            <div class="md:col-span-2">
+              <label class="block text-xs font-bold text-slate-500 mb-1">اسم الموديل / البيان</label>
+              <input type="text" id="item-model" placeholder="مثال: تكييف شارب 1.5 حصان" required class="w-full border p-3 rounded-xl bg-slate-50">
+            </div>
+            
+            <div class="md:col-span-1">
+              <label class="block text-xs font-bold text-slate-500 mb-1">سعر البيع الافتراضي</label>
+              <input type="number" id="item-price" placeholder="0.00" required class="w-full border p-3 rounded-xl bg-slate-50 font-bold text-blue-600">
+            </div>
+
+            <div class="md:col-span-4 bg-green-50 border border-green-200 p-4 rounded-xl mt-2">
+              <h4 class="font-bold text-green-800 mb-2">رصيد أول المدة (اختياري)</h4>
+              <p class="text-xs text-green-700 mb-2">إذا كان لديك بضاعة بالفعل في المخزن، أدخل عددها هنا. وإلا اتركها صفراً.</p>
+              <input type="number" id="item-inQty" placeholder="الرصيد الافتتاحي بالمخزن" value="0" class="w-full md:w-1/3 border p-3 rounded-xl bg-white text-green-700 font-bold shadow-sm">
+            </div>
+
+            <div class="md:col-span-4 flex gap-4 mt-2">
+              <button type="submit" id="form-item-btn" class="flex-1 bg-cyan-600 text-white font-bold p-3 rounded-xl hover:bg-cyan-700">حفظ الصنف في قاعدة البيانات</button>
+              <button type="button" id="form-item-cancel" onclick="cancelEdit()" class="hidden bg-slate-500 text-white font-bold p-3 rounded-xl hover:bg-slate-600 px-8">إلغاء التعديل</button>
             </div>
           </form>
         </div>
         <div class="glass p-6 rounded-3xl overflow-auto">
           <table>
-            <thead><tr><th>الكود</th><th>الموديل</th><th>سعر البيع</th><th>الرصيد</th><th>إجراء</th></tr></thead>
+            <thead><tr><th>الكود</th><th>الموديل</th><th>سعر البيع</th><th>الرصيد الفعلي</th><th>إجراء</th></tr></thead>
             <tbody id="items-table-body"></tbody>
           </table>
         </div>
@@ -173,10 +192,10 @@
       <!-- 3. Receive (Stock In) -->
       <div id="sec-receive" class="hidden">
         <div class="glass p-6 rounded-3xl max-w-2xl mx-auto border-t-4 border-green-500">
-          <h3 class="text-xl font-bold mb-4 text-green-700">تسجيل استلام وارد</h3>
+          <h3 class="text-xl font-bold mb-4 text-green-700">تسجيل استلام وارد جديد</h3>
           <form id="form-receive" class="space-y-4">
             <select id="rec-item" required class="w-full border p-3 rounded-xl bg-slate-50"></select>
-            <input type="number" id="rec-qty" placeholder="الكمية" min="1" required class="w-full border p-3 rounded-xl bg-slate-50 text-green-700 font-bold">
+            <input type="number" id="rec-qty" placeholder="الكمية المستلمة" min="1" required class="w-full border p-3 rounded-xl bg-slate-50 text-green-700 font-bold">
             <button type="submit" class="w-full bg-green-600 text-white font-bold p-3 rounded-xl hover:bg-green-700">ترحيل للمخزن</button>
           </form>
         </div>
@@ -293,8 +312,29 @@
   </div>
 
   <script>
-    Chart.register(ChartDataLabels);
+    // --- توليد PWA Manifest داخلياً لدعم ميزة تثبيت التطبيق ---
+    const manifestData = {
+      name: "نظام هاي كول",
+      short_name: "هاي كول",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#0369a1",
+      icons: [
+        {
+          src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230369a1' rx='20'/%3E%3Ctext x='50' y='65' font-size='40' font-family='Arial' fill='white' text-anchor='middle'%3EHC%3C/text%3E%3C/svg%3E",
+          sizes: "192x192",
+          type: "image/svg+xml"
+        }
+      ]
+    };
+    const stringManifest = JSON.stringify(manifestData);
+    const blob = new Blob([stringManifest], {type: 'application/json'});
+    const manifestURL = URL.createObjectURL(blob);
+    document.getElementById('manifest-link').setAttribute('href', manifestURL);
 
+
+    Chart.register(ChartDataLabels);
     document.getElementById('date').innerHTML = new Date().toLocaleDateString('ar-EG');
     
     // --- Database Initialization ---
@@ -331,25 +371,17 @@
       switchTab('dashboard'); 
     }
 
-    // --- SYSTEM FACTORY RESET (الجديد) ---
+    // --- SYSTEM FACTORY RESET ---
     function factoryReset() {
-      // 1. طلب كلمة المرور الأساسية
-      const pass = prompt('تحذير شديد: سيتم مسح جميع البيانات (الأصناف، الفواتير، المستخدمين) للبدء من جديد وتصفير النظام.\n\nأدخل كلمة مرور الحماية (الأساسية) للتأكيد:');
-      
-      // إذا ألغى العملية
+      const pass = prompt('تحذير شديد: سيتم مسح جميع البيانات للبدء من جديد.\nأدخل كلمة مرور الحماية (123456789) للتأكيد:');
       if (pass === null) return; 
-      
-      // 2. التأكد من كلمة المرور
       if (pass === '123456789') {
-        // 3. تأكيد نهائي
-        if (confirm('تأكيد أخير: هل أنت متأكد من مسح النظام بالكامل؟ (يُفضل أخذ نسخة احتياطية أولاً من زر الحفظ)')) {
-          localStorage.clear(); // مسح جميع البيانات المخزنة
-          alert('تم مسح وتصفير النظام بالكامل بنجاح. سيتم إعادة تشغيل البرنامج.');
-          location.reload(); // إعادة تحميل الصفحة للبدء من جديد
+        if (confirm('تأكيد أخير: هل أنت متأكد من مسح النظام بالكامل؟')) {
+          localStorage.clear(); 
+          alert('تم مسح النظام بنجاح. سيتم إعادة تشغيل البرنامج.');
+          location.reload(); 
         }
-      } else {
-        alert('كلمة المرور غير صحيحة! تم حظر عملية المسح.');
-      }
+      } else { alert('كلمة المرور غير صحيحة!'); }
     }
 
     // --- BACKUP & RESTORE SYSTEM ---
@@ -485,16 +517,56 @@
       document.getElementById('invoice-print-area').classList.remove('hidden'); window.print(); document.getElementById('invoice-print-area').classList.add('hidden');
     }
 
-    // --- OTHER UI LOGIC ---
+    // --- ITEMS MANAGEMENT ---
     document.getElementById('form-item').addEventListener('submit', (e) => {
-      e.preventDefault(); const code = document.getElementById('item-code').value, model = document.getElementById('item-model').value, price = parseFloat(document.getElementById('item-price').value), inQty = parseInt(document.getElementById('item-inQty').value) || 0, outQty = parseInt(document.getElementById('item-outQty').value) || 0;
-      if(editingCode) { const item = db.find(i => i.code === editingCode); item.model = model; item.price = price; item.inQty = inQty; item.outQty = outQty; cancelEdit(); } 
-      else { if(db.find(i => i.code === code)) return alert('الكود مسجل!'); db.push({ code, model, price, inQty, outQty, retQty: 0 }); document.getElementById('form-item').reset(); } updateSystem();
+      e.preventDefault(); 
+      const code = document.getElementById('item-code').value;
+      const model = document.getElementById('item-model').value;
+      const price = parseFloat(document.getElementById('item-price').value);
+      const inQty = parseInt(document.getElementById('item-inQty').value) || 0;
+      
+      if(editingCode) { 
+        const item = db.find(i => i.code === editingCode); 
+        item.model = model; 
+        item.price = price; 
+        // عند التعديل نغير الرصيد الافتتاحي (الوارد) فقط
+        item.inQty = inQty; 
+        cancelEdit(); 
+      } 
+      else { 
+        if(db.find(i => i.code === code)) return alert('الكود مسجل مسبقاً!'); 
+        // عند الإضافة لأول مرة، المنصرف والمرتجع يكون صفر
+        db.push({ code, model, price, inQty, outQty: 0, retQty: 0 }); 
+        document.getElementById('form-item').reset(); 
+      } 
+      updateSystem();
     });
-    function loadItemForEdit(code) { const item = db.find(i => i.code === code); editingCode = item.code; document.getElementById('item-code').value = item.code; document.getElementById('item-code').disabled = true; document.getElementById('item-model').value = item.model; document.getElementById('item-price').value = item.price; document.getElementById('item-inQty').value = item.inQty; document.getElementById('item-outQty').value = item.outQty; document.getElementById('form-item-btn').innerText = 'تحديث'; document.getElementById('form-item-cancel').classList.remove('hidden'); }
-    function cancelEdit() { editingCode = null; document.getElementById('form-item').reset(); document.getElementById('item-code').disabled = false; document.getElementById('form-item-btn').innerText = 'حفظ الصنف'; document.getElementById('form-item-cancel').classList.add('hidden'); }
-    function renderItemsTable() { document.getElementById('items-table-body').innerHTML = db.map((item, i) => `<tr><td class="font-bold">${item.code}</td><td>${item.model}</td><td>${item.price}</td><td class="font-bold text-lg">${item.inQty - item.outQty + item.retQty}</td><td><button onclick="loadItemForEdit('${item.code}')" class="text-amber-500 mx-2 font-bold">تعديل</button><button onclick="if(confirm('حذف؟')){db.splice(${i},1);updateSystem()}" class="text-red-500 font-bold">حذف</button></td></tr>`).join(''); }
+
+    function loadItemForEdit(code) { 
+      const item = db.find(i => i.code === code); 
+      editingCode = item.code; 
+      document.getElementById('item-code').value = item.code; 
+      document.getElementById('item-code').disabled = true; 
+      document.getElementById('item-model').value = item.model; 
+      document.getElementById('item-price').value = item.price; 
+      document.getElementById('item-inQty').value = item.inQty; 
+      document.getElementById('form-item-btn').innerText = 'تحديث البيانات'; 
+      document.getElementById('form-item-cancel').classList.remove('hidden'); 
+    }
+
+    function cancelEdit() { 
+      editingCode = null; 
+      document.getElementById('form-item').reset(); 
+      document.getElementById('item-code').disabled = false; 
+      document.getElementById('form-item-btn').innerText = 'حفظ الصنف في قاعدة البيانات'; 
+      document.getElementById('form-item-cancel').classList.add('hidden'); 
+    }
+
+    function renderItemsTable() { 
+      document.getElementById('items-table-body').innerHTML = db.map((item, i) => `<tr><td class="font-bold">${item.code}</td><td>${item.model}</td><td>${item.price}</td><td class="font-bold text-lg">${item.inQty - item.outQty + item.retQty}</td><td><button onclick="loadItemForEdit('${item.code}')" class="text-amber-500 mx-2 font-bold">تعديل</button><button onclick="if(confirm('هل أنت متأكد من الحذف؟')){db.splice(${i},1);updateSystem()}" class="text-red-500 font-bold">حذف</button></td></tr>`).join(''); 
+    }
     
+    // --- OTHER LOGIC ---
     document.getElementById('form-receive').addEventListener('submit', (e) => { e.preventDefault(); db.find(i => i.code === document.getElementById('rec-item').value).inQty += parseInt(document.getElementById('rec-qty').value); document.getElementById('form-receive').reset(); updateSystem(); alert('تم.'); });
     document.getElementById('form-return').addEventListener('submit', (e) => { e.preventDefault(); db.find(i => i.code === document.getElementById('ret-item').value).retQty += parseInt(document.getElementById('ret-qty').value); document.getElementById('form-return').reset(); updateSystem(); alert('تم.'); });
     
@@ -502,7 +574,7 @@
     function renderInventoryTable() { document.getElementById('inventoryBody').innerHTML = db.map(item => `<tr><td class="font-bold">${item.code}</td><td>${item.model}</td><td class="text-green-600 font-bold">${item.inQty}</td><td class="text-red-600 font-bold">${item.outQty}</td><td class="text-purple-600 font-bold">${item.retQty}</td><td class="font-extrabold text-xl bg-slate-50">${item.inQty - item.outQty + item.retQty}</td></tr>`).join(''); }
     
     function updateKPIs() { let tIn = 0, tOut = 0, tAmt = 0; db.forEach(i => { tIn += i.inQty; tOut += i.outQty; }); invoicesHistory.forEach(i => tAmt += i.total); document.getElementById('kpi-items').innerText = db.length; document.getElementById('kpi-in').innerText = tIn; document.getElementById('kpi-out').innerText = tOut; document.getElementById('kpi-sales-money').innerText = tAmt + ' ج.م'; }
-    function exportToExcel() { const data = db.map(i => ({ "الكود": i.code, "الموديل": i.model, "الوارد": i.inQty, "المنصرف": i.outQty, "المرتجع": i.retQty, "الرصيد الفعلي": (i.inQty - i.outQty + i.retQty) })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "المخزن"); XLSX.writeFile(wb, "HighCool_Stock.xlsx"); }
+    function exportToExcel() { const data = db.map(i => ({ "الكود": i.code, "الموديل": i.model, "الوارد (المستلم)": i.inQty, "المنصرف (المباع)": i.outQty, "المرتجع": i.retQty, "الرصيد الفعلي الحالي": (i.inQty - i.outQty + i.retQty) })); const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "المخزن"); XLSX.writeFile(wb, "HighCool_Stock.xlsx"); }
     
     document.getElementById('form-user').addEventListener('submit', (e) => { e.preventDefault(); const u = document.getElementById('new-user-name').value.trim(); const p = document.getElementById('new-user-pass').value.trim(); if(usersDB.find(x => x.username.toLowerCase() === u.toLowerCase())) return alert('الاسم موجود!'); usersDB.push({ username: u, password: p, role: 'user' }); localStorage.setItem('hc_users', JSON.stringify(usersDB)); document.getElementById('form-user').reset(); renderUsersTable(); alert('تم.'); });
     function renderUsersTable() { document.getElementById('users-table-body').innerHTML = usersDB.map((u, i) => `<tr><td class="font-bold">${u.username}</td><td>${u.role === 'admin' ? 'مدير' : 'مستخدم'}</td><td>${u.role !== 'admin' ? `<button onclick="if(confirm('حذف؟')){usersDB.splice(${i},1);localStorage.setItem('hc_users',JSON.stringify(usersDB));renderUsersTable()}" class="text-red-500 font-bold">حذف</button>` : '-'}</td></tr>`).join(''); }
