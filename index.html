@@ -194,34 +194,37 @@
     .settings-item:last-child { border-bottom: none; }
     
     /* ---------------------------------------------------
-       إعدادات الطباعة (أبيض وأسود صريح - تناسب أي طابعة)
+       إعدادات الطباعة الدقيقة (لعزل المطبوعات عن بعضها)
     ---------------------------------------------------- */
     @media print {
+      /* إخفاء كل محتوى الصفحة الافتراضي */
+      body > *:not(.printing) { display: none !important; }
+      
+      /* إظهار الجزء المطلوب طباعته فقط وإعطائه المساحة كاملة */
+      .printing { 
+        display: block !important; 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        width: 100%; 
+        background: #fff;
+      }
+      
       * {
-        color: #000 !important; /* فرض اللون الأسود للنصوص */
-        background: transparent !important; /* إلغاء جميع الخلفيات الملونة */
+        color: #000 !important;
+        background: transparent !important;
         box-shadow: none !important;
         text-shadow: none !important;
-        border-color: #000 !important; /* فرض اللون الأسود للحدود */
+        border-color: #000 !important;
       }
       body {
         width: 100%;
         margin: 0;
         padding: 0;
-        font-size: 11pt;
-      }
-      /* إخفاء الواجهة بالكامل أثناء الطباعة */
-      #login-screen, #sidebar, #main-content, .no-print, .toast, button {
-        display: none !important;
-      }
-      /* إظهار منطقة الطباعة فقط وجعلها 100% من عرض الورقة */
-      #invoice-print-area {
-        display: block !important;
-        position: static;
-        width: 100%;
+        font-size: 12pt;
       }
       table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #000 !important; padding: 6px; }
+      th, td { border: 1px solid #000 !important; padding: 8px; }
       .avoid-break { page-break-inside: avoid; }
     }
   </style>
@@ -279,6 +282,7 @@
       <button class="nav-btn" onclick="switchTab('items')" id="btn-items"><span class="icon">⚙️</span> إدارة الأصناف</button>
       <button class="nav-btn" onclick="switchTab('receive')" id="btn-receive"><span class="icon">📥</span> استلام وارد</button>
       <button class="nav-btn" onclick="switchTab('sales')" id="btn-sales"><span class="icon">🛒</span> فاتورة مبيعات</button>
+      <button class="nav-btn" onclick="switchTab('quotations')" id="btn-quotations" style="color:#34d399;"><span class="icon">📝</span> عروض الأسعار</button>
       <button class="nav-btn" onclick="switchTab('returns')" id="btn-returns"><span class="icon">🔄</span> المرتجعات</button>
     </div>
     <div class="nav-section">
@@ -482,7 +486,7 @@
               <option value="كونسيلد (مخفي)">كونسيلد</option>
               <option value="شباك">شباك</option>
               <option value="كاسيت">كاسيت</option>
-              <option value="مر المركزي">مركزي</option>
+              <option value="مركزي">مركزي</option>
               <option value="أخرى / مستلزمات">أخرى / مستلزمات</option>
             </select>
           </div>
@@ -578,6 +582,71 @@
             <thead><tr><th>التاريخ</th><th>الصنف</th><th>الكمية</th><th>ملاحظات</th></tr></thead>
             <tbody id="receive-log-body"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUOTATIONS (عروض الأسعار) -->
+  <div id="sec-quotations" class="section">
+    <div style="display:grid; grid-template-columns:1fr 2fr; gap:20px; align-items:start;">
+      <div class="card" style="border-top:4px solid #34d399;">
+        <div class="card-header"><h3 style="color:#059669;">📝 بيانات عرض السعر</h3></div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label class="form-label">اسم العميل / الشركة *</label>
+            <input type="text" id="quot-client-name" class="form-input" placeholder="مثال: أ/ عبد السلام فياض">
+          </div>
+          
+          <div style="border-top:1px solid #e2e8f0; padding-top:14px;">
+            <label class="form-label" style="font-size:0.85rem; color:#059669; margin-bottom:8px;">➕ إضافة صنف للعرض</label>
+            <select id="quot-item" class="form-input" style="margin-bottom:8px;" onchange="onQuotItemChange()"></select>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+              <input type="number" id="quot-qty" class="form-input" value="1" min="1" placeholder="الكمية">
+              <input type="number" id="quot-price" class="form-input" placeholder="سعر البيع" style="color:#059669; font-weight:800;">
+            </div>
+            <div>
+              <label class="form-label">اسم البيان في العرض (يمكنك تعديله)</label>
+              <input type="text" id="quot-custom-name" class="form-input" placeholder="مثال: VRF وحدة داخلية 8 حصان" style="margin-bottom:8px;">
+            </div>
+            <button onclick="addToQuotation()" class="btn btn-success btn-full">➕ إضافة للعرض</button>
+          </div>
+          
+          <div style="border-top:1px solid #e2e8f0; padding-top:14px;">
+            <label class="form-label">إجمالي السعر بالحروف (تفقيط)</label>
+            <input type="text" id="quot-total-text" class="form-input" placeholder="مثال: ثلاثة مائة وخمسون الف جنيها مصريا فقط لا غير">
+          </div>
+
+          <div style="border-top:1px solid #e2e8f0; padding-top:14px;">
+            <label class="form-label">شروط الدفع والملاحظات</label>
+            <textarea id="quot-notes" class="form-input" style="height:150px; font-size:0.8rem; line-height:1.6;">- السعر يشمل التوريد والتركيب.
+- جدية الحجز يتم دفع قيمة 50% من اجمالي المبلغ نقدا او بتحويل بنكى على حساب رقم:
+Bank: QNB | CID/1004124441 | Account# 10028310971
+IBAN: EG030037023108181002831097133
+NAME: AHMED MOHAMED ELSAYED AWAD | Branch: AL ALAMEIN CITY 00231
+- يتم دفع قيمة الـ 50% المتبقية من المبلغ قبل التوريد والتركيب بـ 48 ساعة.
+- مدة التوريد والتركيب خلال من 15 يوم الى 20 يوم من تاريخه.</textarea>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header">
+            <h3>📋 الأصناف المضافة لعرض السعر</h3>
+          </div>
+          <div style="overflow-x:auto; min-height:200px;">
+            <table class="data-table">
+              <thead><tr><th>م</th><th>البيان</th><th>الكمية</th><th>إجمالي السعر</th><th>حذف</th></tr></thead>
+              <tbody id="current-quot-body"></tbody>
+            </table>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding:16px; background:#f8fafc; border-radius:14px; flex-wrap:wrap; gap:12px;">
+            <div>
+              <div style="font-size:1.5rem; font-weight:900; color:#059669;">الإجمالي: <span id="quot-total">0</span> ج.م</div>
+            </div>
+            <button onclick="printQuotation()" class="btn btn-success" style="padding:14px 28px; font-size:1rem;">🖨️ معاينة وطباعة عرض السعر</button>
+          </div>
         </div>
       </div>
     </div>
@@ -779,7 +848,7 @@
       <!-- Company Info -->
       <div class="card" style="grid-column:span 2;">
         <div class="card-header"><h3>🏢 بيانات الشركة وإعدادات الفاتورة</h3></div>
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:14px;">
           <div>
             <label class="form-label">اسم الشركة</label>
             <input type="text" id="comp-name" class="form-input" placeholder="هاي كول للتكييف">
@@ -797,10 +866,6 @@
             <input type="text" id="comp-tax" class="form-input" placeholder="الرقم الضريبي">
           </div>
           <div>
-            <label class="form-label">حد التنبيه للمخزون المنخفض</label>
-            <input type="number" id="comp-low-stock" class="form-input" value="3" min="1">
-          </div>
-          <div>
             <label class="form-label">عملة التقارير</label>
             <select id="comp-currency" class="form-input">
               <option value="ج.م">ج.م (جنيه مصري)</option>
@@ -808,6 +873,26 @@
               <option value="د.إ">د.إ (درهم إماراتي)</option>
               <option value="دينار">دينار</option>
             </select>
+          </div>
+          <div>
+            <label class="form-label">حد التنبيه للمخزون</label>
+            <input type="number" id="comp-low-stock" class="form-input" value="3" min="1">
+          </div>
+          <div>
+            <label class="form-label">بادئة رقم الفاتورة (اختياري)</label>
+            <input type="text" id="comp-inv-prefix" class="form-input" placeholder="مثال: INV-">
+          </div>
+          <div>
+            <label class="form-label">رقم الفاتورة القادم</label>
+            <input type="number" id="comp-inv-next" class="form-input" placeholder="1000">
+          </div>
+          <div>
+            <label class="form-label">بادئة عرض السعر (اختياري)</label>
+            <input type="text" id="comp-quot-prefix" class="form-input" placeholder="مثال: Q-">
+          </div>
+          <div>
+            <label class="form-label">رقم عرض السعر القادم</label>
+            <input type="number" id="comp-quot-next" class="form-input" placeholder="1000">
           </div>
         </div>
         <button onclick="saveCompanySettings()" class="btn btn-primary" style="margin-top:16px;">💾 حفظ الإعدادات</button>
@@ -833,17 +918,14 @@
 
 </main>
 
-<!-- INVOICE PRINT TEMPLATE (B&W - Responsive for any paper) -->
+<!-- INVOICE PRINT TEMPLATE -->
 <div id="invoice-print-area" style="display:none; font-family:'Cairo',sans-serif; direction:rtl;">
-  
-  <!-- Header -->
   <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:15px;">
     <h1 id="print-company-name" style="font-size:1.6em; font-weight:bold; margin:0;">هاي كول للتكييف</h1>
     <p id="print-company-contact" style="font-size:0.9em; margin:5px 0;"></p>
     <h2 style="font-size:1.2em; font-weight:bold; margin:5px 0;">أمر توريد وتركيب (فاتورة)</h2>
   </div>
   
-  <!-- Info Boxes (Flex wrap allows stacking on small thermal paper) -->
   <div style="display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:15px; font-size:0.9em; border-bottom:1px solid #000; padding-bottom:10px;">
     <div style="margin-bottom:10px; min-width:150px;">
       <div style="margin-bottom:4px;">رقم الفاتورة: <strong id="print-inv-no"></strong></div>
@@ -857,7 +939,6 @@
     </div>
   </div>
 
-  <!-- Table -->
   <table style="width:100%; border-collapse:collapse; margin-bottom:15px; font-size:0.85em; text-align:center;">
     <thead>
       <tr>
@@ -870,15 +951,12 @@
     <tbody id="print-invoice-body"></tbody>
   </table>
 
-  <!-- Totals & Notes (Flex wrap for adaptability) -->
   <div class="avoid-break" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:15px; margin-top:10px;">
-    <!-- Notes -->
     <div style="flex:1; min-width:200px; border:1px solid #000; padding:10px;">
       <div style="font-weight:bold; margin-bottom:5px;">ملاحظات التركيب:</div>
       <p id="print-notes" style="font-size:0.85em; margin:0;"></p>
     </div>
     
-    <!-- Totals -->
     <div style="flex:1; min-width:200px; border:1px solid #000; padding:10px;">
       <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
         <span>الإجمالي قبل الخصم:</span> <span id="print-subtotal"></span>
@@ -892,7 +970,6 @@
     </div>
   </div>
 
-  <!-- Signatures -->
   <div class="avoid-break" style="margin-top:30px; display:flex; justify-content:space-around; text-align:center; flex-wrap:wrap;">
     <div style="width:45%; min-width:120px; margin-bottom:20px;">
       <div style="font-weight:bold; font-size:0.9em; margin-bottom:30px;">توقيع العميل بالاستلام</div>
@@ -906,6 +983,83 @@
   
   <div class="avoid-break" style="text-align:center; margin-top:10px; border-top:1px solid #000; padding-top:10px; font-size:0.8em;">
     شكراً لتعاملكم مع هاي كول للتكييف
+  </div>
+</div>
+
+<!-- QUOTATION PRINT TEMPLATE (عرض السعر) -->
+<div id="quotation-print-area" style="display:none; font-family:'Cairo',sans-serif; direction:rtl; padding:10px;">
+  
+  <!-- Header -->
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:15px; margin-bottom:20px;">
+    <div>
+      <h1 id="print-quot-company" style="font-size:1.8em; font-weight:bold; margin:0;">هاي كول للتكييف</h1>
+      <p id="print-quot-company-contact" style="font-size:0.9em; margin:5px 0; color:#333;"></p>
+    </div>
+    <div style="text-align:left;">
+      <h2 style="font-size:1.8em; font-weight:bold; margin:0; border:2px solid #000; padding:5px 15px; border-radius:8px; display:inline-block;">عرض سعر</h2>
+      <p style="font-size:1.1em; font-weight:bold; margin:8px 0 0 0;">رقم: <span id="print-quot-no" style="direction:ltr; display:inline-block;"></span></p>
+    </div>
+  </div>
+  
+  <!-- Info -->
+  <div style="display:flex; justify-content:space-between; margin-bottom:20px; font-size:1em;">
+    <div>
+      <p style="margin:5px 0;"><strong>السادة / </strong> <span id="print-quot-client" style="font-weight:bold; font-size:1.1em;"></span></p>
+      <p style="margin:5px 0;">عناية الأستاذ المحترم ،،،</p>
+    </div>
+    <div style="text-align:left;">
+      <p style="margin:5px 0;"><strong>التاريخ: </strong> <span id="print-quot-date"></span> <span id="print-quot-day" style="font-size:0.9em; margin-right:5px;"></span></p>
+    </div>
+  </div>
+
+  <p style="margin-bottom:15px; font-size:1.1em; font-weight:bold;">تحية طيبة وبعد،<br>يسعدنا أن نقدم لسيادتكم عرض الأسعار التالي بناءً على طلبكم:</p>
+
+  <!-- Table -->
+  <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:0.95em; text-align:center;">
+    <thead>
+      <tr>
+        <th style="border:1px solid #000; padding:8px; width:5%;">م</th>
+        <th style="border:1px solid #000; padding:8px; width:45%; text-align:right;">البيان والمواصفات</th>
+        <th style="border:1px solid #000; padding:8px; width:10%;">الكمية</th>
+        <th style="border:1px solid #000; padding:8px; width:15%;">سعر الوحدة</th>
+        <th style="border:1px solid #000; padding:8px; width:25%;">الإجمالي</th>
+      </tr>
+    </thead>
+    <tbody id="print-quot-body"></tbody>
+  </table>
+
+  <!-- Total & Arabic Text -->
+  <div class="avoid-break" style="border:2px solid #000; border-radius:8px; padding:15px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-size:1.1em;">
+      <strong>الإجمالي فقط: </strong> <span id="print-quot-total-text" style="font-weight:bold;"></span> لا غير.
+    </div>
+    <div style="font-size:1.3em; font-weight:bold;">
+      الإجمالي: <span id="print-quot-total-num"></span>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="avoid-break" style="margin-bottom:30px;">
+    <h4 style="font-size:1.1em; font-weight:bold; text-decoration:underline; margin-bottom:10px;">شروط الدفع والملاحظات:</h4>
+    <div id="print-quot-notes" style="font-size:0.95em; line-height:1.8; white-space:pre-wrap; border:1px solid #000; padding:15px; border-radius:8px;"></div>
+  </div>
+
+  <!-- Signatures -->
+  <div class="avoid-break" style="display:flex; justify-content:space-around; text-align:center; margin-top:40px;">
+    <div>
+      <p style="font-weight:bold; font-size:1em; margin-bottom:40px;">المدير المالي</p>
+      <p style="font-size:1em; border-top:1px dashed #000; padding-top:5px;">أ/ زهرة عوض</p>
+    </div>
+    <div>
+      <p style="font-weight:bold; font-size:1em; margin-bottom:40px;">رئيس مجلس الإدارة</p>
+      <p style="font-size:1em; border-top:1px dashed #000; padding-top:5px;">م/ أحمد عوض</p>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <div class="avoid-break" style="margin-top:40px; border-top:2px solid #000; padding-top:15px; font-size:0.85em; line-height:1.6; text-align:center;">
+    <p style="margin:0;">الفرع الأول: الاسكندرية, الكيلو ۲۱ اكتوبر النخيل ش ۱۲ | الفرع الثاني: العالمين أمام بوابة مارينا 7 منتجع سي عبده | الفرع الثالث: رأس الحكمة</p>
+    <p style="font-weight:bold; margin:5px 0 0 0; direction:ltr;">📞 045/2509030 - 01009566605 - 01205617770</p>
   </div>
 </div>
 
@@ -934,12 +1088,13 @@ let lists = JSON.parse(localStorage.getItem('hc_lists')) || {
 };
 
 let companySettings = JSON.parse(localStorage.getItem('hc_company')) || {
-  name: 'هاي كول للتكييف', phone: '', address: '', tax: '', lowStockThreshold: 3, currency: 'ج.م'
+  name: 'هاي كول للتكييف', phone: '', address: '', tax: '', lowStockThreshold: 3, currency: 'ج.م',
+  invPrefix: '', nextInvNo: 1000, quotPrefix: 'Q-', nextQuotNo: 1000
 };
 
 invoicesHistory.forEach(inv => { if(!inv.rawDate) inv.rawDate = new Date().toISOString().slice(0,10); });
 
-let currentUser = null, currentInvoice = [], editingCode = null;
+let currentUser = null, currentInvoice = [], currentQuotItems = [], editingCode = null;
 let calMonth = new Date().getMonth(), calYear = new Date().getFullYear();
 let currentReport = 'daily';
 
@@ -950,7 +1105,6 @@ document.getElementById('rep-daily-date').value = today;
 document.getElementById('rep-month-val').value = today.slice(0,7);
 document.getElementById('rep-year-val').value = new Date().getFullYear();
 
-// Set week defaults
 const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
 document.getElementById('rep-week-start').value = weekStart.toISOString().slice(0,10);
 const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
@@ -1036,6 +1190,7 @@ const tabTitles = {
   items: ['إدارة الأصناف والأجهزة', 'إضافة وتعديل قاعدة بيانات الأجهزة'],
   receive: ['استلام وارد جديد', 'تسجيل الكميات المستلمة وتحديث المخزن'],
   sales: ['فاتورة مبيعات وتركيب', 'إنشاء فواتير البيع للعملاء'],
+  quotations: ['عروض الأسعار', 'إنشاء وطباعة عرض سعر احترافي'],
   returns: ['المرتجعات', 'تسجيل الوحدات المرتجعة من العملاء'],
   invoices: ['سجل الفواتير', 'عرض وبحث جميع الفواتير الصادرة'],
   inventory: ['رصيد المخزن', 'الجرد الفعلي التفصيلي لجميع الأصناف'],
@@ -1066,9 +1221,8 @@ function updateSystem() {
 // =========== DROPDOWNS ===========
 function updateSelectDropdowns() {
   const itemOpts = '<option value="">-- اختر الجهاز --</option>' + db.map(i => `<option value="${i.code}">${i.code} | ${i.model} - ${i.capacity}</option>`).join('');
-  ['rec-item','sale-item','ret-item'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = itemOpts; });
+  ['rec-item','sale-item','ret-item','quot-item'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = itemOpts; });
   
-  // Engineer dropdown
   const engEl = document.getElementById('sale-engineer');
   if(engEl) engEl.innerHTML = '<option value="">-- اختر المهندس --</option>' + lists.engineers.map(e => `<option value="${e}">${e}</option>`).join('');
 }
@@ -1080,6 +1234,12 @@ function applyCompanySettings() {
   document.getElementById('comp-tax').value = companySettings.tax || '';
   document.getElementById('comp-low-stock').value = companySettings.lowStockThreshold || 3;
   document.getElementById('comp-currency').value = companySettings.currency || 'ج.م';
+  
+  document.getElementById('comp-inv-prefix').value = companySettings.invPrefix !== undefined ? companySettings.invPrefix : '';
+  document.getElementById('comp-inv-next').value = companySettings.nextInvNo || 1000;
+  
+  document.getElementById('comp-quot-prefix').value = companySettings.quotPrefix !== undefined ? companySettings.quotPrefix : 'Q-';
+  document.getElementById('comp-quot-next').value = companySettings.nextQuotNo || 1000;
 }
 
 function saveCompanySettings() {
@@ -1089,28 +1249,30 @@ function saveCompanySettings() {
     address: document.getElementById('comp-address').value,
     tax: document.getElementById('comp-tax').value,
     lowStockThreshold: parseInt(document.getElementById('comp-low-stock').value) || 3,
-    currency: document.getElementById('comp-currency').value
+    currency: document.getElementById('comp-currency').value,
+    
+    invPrefix: document.getElementById('comp-inv-prefix').value,
+    nextInvNo: parseInt(document.getElementById('comp-inv-next').value) || 1000,
+    
+    quotPrefix: document.getElementById('comp-quot-prefix').value,
+    nextQuotNo: parseInt(document.getElementById('comp-quot-next').value) || 1000
   };
   saveAll(); showToast('تم حفظ إعدادات الشركة بنجاح!', 'success');
 }
 
 // =========== SETTINGS LISTS ===========
 function renderSettingsLists() {
-  // Brands
   renderList('brands', 'brands-list');
   renderList('engineers', 'engineers-list');
   renderList('capacities', 'capacities-list');
   renderList('deviceTypes', 'deviceTypes-list');
   
-  // Update brand select in items form
   const brandSel = document.getElementById('item-brand');
   if(brandSel) brandSel.innerHTML = '<option value="">-- اختر الماركة --</option>' + lists.brands.map(b => `<option value="${b}">${b}</option>`).join('');
   
-  // Update capacity select
   const capSel = document.getElementById('item-capacity');
   if(capSel) capSel.innerHTML = lists.capacities.map(c => `<option value="${c}">${c}</option>`).join('');
   
-  // Update device type select
   const typeSel = document.getElementById('item-type');
   if(typeSel) typeSel.innerHTML = lists.deviceTypes.map(t => `<option value="${t}">${t}</option>`).join('');
   
@@ -1295,7 +1457,104 @@ function renderReceiveLog() {
     </tr>`).join('') || '<tr><td colspan="4" style="color:#94a3b8; padding:20px;">لا يوجد سجل استلام</td></tr>';
 }
 
-// =========== POS ===========
+// =========== QUOTATIONS (عروض الأسعار) ===========
+function onQuotItemChange() {
+  const code = document.getElementById('quot-item').value;
+  const item = db.find(i => i.code === code);
+  if(item) {
+    document.getElementById('quot-price').value = item.price;
+    document.getElementById('quot-custom-name').value = `${item.model} (${item.capacity} - ${item.type})`;
+  } else {
+    document.getElementById('quot-price').value = '';
+    document.getElementById('quot-custom-name').value = '';
+  }
+}
+
+function addToQuotation() {
+  const code = document.getElementById('quot-item').value;
+  const qty = parseInt(document.getElementById('quot-qty').value);
+  const price = parseFloat(document.getElementById('quot-price').value);
+  let customName = document.getElementById('quot-custom-name').value.trim();
+  
+  if(!code || qty < 1 || isNaN(price)) return showToast('الرجاء إدخال بيانات صحيحة!', 'error');
+  if(!customName) {
+    const item = db.find(i => i.code === code);
+    customName = `${item.model} (${item.capacity} - ${item.type})`;
+  }
+  
+  currentQuotItems.push({ name: customName, qty, price, total: qty * price });
+  renderQuotationItems();
+  
+  document.getElementById('quot-qty').value = 1;
+  document.getElementById('quot-custom-name').value = '';
+}
+
+function renderQuotationItems() {
+  let total = 0;
+  document.getElementById('current-quot-body').innerHTML = currentQuotItems.map((r, i) => {
+    total += r.total;
+    return `<tr>
+      <td>${i + 1}</td>
+      <td style="text-align:right; font-weight:700;">${r.name}</td>
+      <td>${r.qty}</td>
+      <td style="color:#059669; font-weight:800;">${r.total}</td>
+      <td><button onclick="currentQuotItems.splice(${i},1);renderQuotationItems();" class="btn btn-danger btn-sm">✕</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('quot-total').innerText = total.toLocaleString();
+}
+
+function printQuotation() {
+  if(currentQuotItems.length === 0) return showToast('عرض السعر فارغ!', 'error');
+  const clientName = document.getElementById('quot-client-name').value.trim();
+  if(!clientName) return showToast('الرجاء إدخال اسم العميل أو الجهة!', 'error');
+  
+  // إنشاء رقم عرض السعر بناءً على الإعدادات
+  const prefix = companySettings.quotPrefix !== undefined ? companySettings.quotPrefix : 'Q-';
+  const seqNo = parseInt(companySettings.nextQuotNo) || 1000;
+  const quotNo = prefix + seqNo;
+  
+  // تحديث الرقم القادم
+  companySettings.nextQuotNo = seqNo + 1;
+  document.getElementById('comp-quot-next').value = companySettings.nextQuotNo;
+  saveAll();
+
+  // تجهيز البيانات
+  document.getElementById('print-quot-company').innerText = companySettings.name || 'هاي كول للتكييف';
+  document.getElementById('print-quot-company-contact').innerText = [companySettings.phone, companySettings.address].filter(Boolean).join(' | ');
+
+  document.getElementById('print-quot-no').innerText = quotNo;
+  document.getElementById('print-quot-date').innerText = new Date().toLocaleDateString('ar-EG');
+  document.getElementById('print-quot-day').innerText = `(اليوم ${new Date().toLocaleDateString('ar-EG', {weekday:'long'})})`;
+  document.getElementById('print-quot-client').innerText = clientName;
+  
+  const cur = companySettings.currency;
+  
+  document.getElementById('print-quot-body').innerHTML = currentQuotItems.map((r, i) => `
+    <tr>
+      <td style="border:1px solid #000; padding:8px;">${i + 1}</td>
+      <td style="border:1px solid #000; padding:8px; text-align:right; font-weight:bold;">${r.name}</td>
+      <td style="border:1px solid #000; padding:8px;">${r.qty}</td>
+      <td style="border:1px solid #000; padding:8px;">${r.price.toLocaleString()}</td>
+      <td style="border:1px solid #000; padding:8px;">${r.total.toLocaleString()}</td>
+    </tr>
+  `).join('');
+  
+  const totalAmount = currentQuotItems.reduce((s,x)=>s+x.total,0);
+  const totalText = document.getElementById('quot-total-text').value.trim();
+  
+  document.getElementById('print-quot-total-num').innerText = `${totalAmount.toLocaleString()} ${cur}`;
+  document.getElementById('print-quot-total-text').innerText = totalText || `${totalAmount.toLocaleString()} ${cur}`;
+  document.getElementById('print-quot-notes').innerText = document.getElementById('quot-notes').value;
+
+  // إظهار كود الطباعة فقط
+  const printArea = document.getElementById('quotation-print-area');
+  printArea.classList.add('printing');
+  window.print();
+  printArea.classList.remove('printing');
+}
+
+// =========== POS (فاتورة المبيعات) ===========
 function onSaleItemChange() {
   const code = document.getElementById('sale-item').value;
   const item = db.find(i => i.code === code);
@@ -1353,13 +1612,20 @@ function processSale() {
   const discount = parseFloat(document.getElementById('invoice-discount').value) || 0;
   const subtotal = currentInvoice.reduce((a,b) => a+b.total, 0);
   const total = Math.max(0, subtotal - discount);
-  const invNo = Math.floor(Math.random() * 90000) + 10000;
+  
+  // إنشاء رقم الفاتورة التسلسلي بناءً على الإعدادات
+  const prefix = companySettings.invPrefix !== undefined ? companySettings.invPrefix : '';
+  const seqNo = parseInt(companySettings.nextInvNo) || 1000;
+  const invNo = prefix + seqNo;
+  
+  companySettings.nextInvNo = seqNo + 1;
+  document.getElementById('comp-inv-next').value = companySettings.nextInvNo;
+
   const engineer = document.getElementById('sale-engineer').value;
   
   currentInvoice.forEach(r => {
     const item = db.find(i => i.code === r.code);
     item.outQty += r.qty;
-    // Remove used serials
     if(r.serialIn && item.serialsIndoor) {
       const idx = item.serialsIndoor.indexOf(r.serialIn);
       if(idx > -1) item.serialsIndoor.splice(idx, 1);
@@ -1371,7 +1637,7 @@ function processSale() {
   });
   
   const invData = {
-    invNo, date: new Date().toLocaleDateString('ar-EG'), rawDate: today,
+    invNo: invNo, date: new Date().toLocaleDateString('ar-EG'), rawDate: today,
     client: clientName, phone: document.getElementById('client-phone').value || '-',
     address: document.getElementById('client-address').value || '-',
     notes: document.getElementById('invoice-notes').value || '',
@@ -1390,7 +1656,7 @@ function processSale() {
 function printInvoice(inv) {
   document.getElementById('print-company-name').innerText = companySettings.name || 'هاي كول للتكييف';
   document.getElementById('print-company-contact').innerText = [companySettings.phone, companySettings.address].filter(Boolean).join(' | ');
-  document.getElementById('print-inv-no').innerText = '#' + inv.invNo;
+  document.getElementById('print-inv-no').innerText = inv.invNo;
   document.getElementById('print-date').innerText = inv.date;
   document.getElementById('print-client').innerText = inv.client;
   document.getElementById('print-phone').innerText = inv.phone;
@@ -1401,7 +1667,6 @@ function printInvoice(inv) {
   document.getElementById('print-discount').innerText = `${inv.discount||0} ${companySettings.currency}`;
   document.getElementById('print-total').innerText = `${inv.total} ${companySettings.currency}`;
   
-  // دمج السيريال مع اسم الصنف لتوفير المساحة للورق الصغير (بدون ألوان)
   document.getElementById('print-invoice-body').innerHTML = inv.items.map(r => {
     let serialInfo = '';
     if (r.serialIn || r.serialOut) {
@@ -1416,10 +1681,10 @@ function printInvoice(inv) {
       </tr>`;
   }).join('');
   
-  const area = document.getElementById('invoice-print-area');
-  area.style.display = 'block';
+  const printArea = document.getElementById('invoice-print-area');
+  printArea.classList.add('printing');
   window.print();
-  area.style.display = 'none';
+  printArea.classList.remove('printing');
 }
 
 // =========== RETURNS ===========
@@ -1447,7 +1712,7 @@ function renderInvoicesHistory() {
   document.getElementById('invoices-table-body').innerHTML = filtered.map((inv, i) => {
     const realIdx = invoicesHistory.indexOf(inv);
     return `<tr>
-      <td><span class="badge badge-cyan">#${inv.invNo}</span></td>
+      <td><span class="badge badge-cyan">${inv.invNo}</span></td>
       <td style="font-size:0.82rem;">${inv.date}</td>
       <td style="font-weight:800; text-align:right;">${inv.client}</td>
       <td style="color:#64748b;">${inv.phone||'-'}</td>
@@ -1560,7 +1825,7 @@ function renderRecentInvoices() {
   const cur = companySettings.currency;
   document.getElementById('recent-invoices-body').innerHTML = invoicesHistory.slice(0,5).map(inv => `
     <tr>
-      <td><span class="badge badge-cyan">#${inv.invNo}</span></td>
+      <td><span class="badge badge-cyan">${inv.invNo}</span></td>
       <td style="font-size:0.82rem;">${inv.date}</td>
       <td style="font-weight:700; text-align:right;">${inv.client}</td>
       <td style="font-weight:900; color:var(--accent);">${inv.total} ${cur}</td>
@@ -1611,7 +1876,6 @@ function buildReportHTML(title, dateStr, invs) {
   const totalItems = invs.reduce((s,i)=>s+i.items.reduce((a,b)=>a+b.qty,0), 0);
   const avgInvoice = invs.length > 0 ? (totalAmt / invs.length).toFixed(0) : 0;
   
-  // Top items
   const itemSales = {};
   invs.forEach(inv => inv.items.forEach(it => { itemSales[it.model] = (itemSales[it.model]||0) + it.qty; }));
   const topItems = Object.entries(itemSales).sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -1643,7 +1907,7 @@ function buildReportHTML(title, dateStr, invs) {
             <thead><tr><th>رقم الفاتورة</th><th>التاريخ</th><th>العميل</th><th>الوحدات</th><th>القيمة</th></tr></thead>
             <tbody>
               ${invs.map(inv=>`<tr>
-                <td><span class="badge badge-cyan">#${inv.invNo}</span></td>
+                <td><span class="badge badge-cyan">${inv.invNo}</span></td>
                 <td style="font-size:0.82rem;">${inv.date}</td>
                 <td style="font-weight:700; text-align:right;">${inv.client}</td>
                 <td>${inv.items.reduce((a,b)=>a+b.qty,0)}</td>
@@ -1699,7 +1963,6 @@ function generateYearlyReport() {
   if(!year) return showToast('أدخل السنة', 'error');
   const invs = invoicesHistory.filter(i => i.rawDate && i.rawDate.startsWith(year));
   
-  // Monthly breakdown
   const monthlyData = Array(12).fill(0).map((_, m) => {
     const monthInvs = invs.filter(i => i.rawDate.startsWith(`${year}-${String(m+1).padStart(2,'0')}`));
     return monthInvs.reduce((s,i)=>s+i.total, 0);
@@ -1721,16 +1984,14 @@ function generateYearlyReport() {
   document.getElementById('yearly-report-content').innerHTML = `<div class="card">${buildReportHTML(`التقرير السنوي ${year}`, `السنة المالية ${year}`, invs)}</div>${extraHTML}`;
 }
 
-// طباعة التقارير بأبيض وأسود
 function printReport(type) {
   const content = document.getElementById(`${type}-report-content`);
   if(!content || !content.innerHTML.trim()) return showToast('أنشئ التقرير أولاً', 'error');
   const printWin = window.open('', '_blank');
   
-  // إدخال كود تقارير الطباعة المخصص للأبيض والأسود
   printWin.document.write(`<html dir="rtl"><head><meta charset="UTF-8"><title>تقرير هاي كول</title>
     <style>
-      body { font-family: sans-serif; padding: 15px; color: #000; margin: 0; font-size: 14px; }
+      body { font-family: sans-serif; padding: 15px; color: #000; margin: 0; font-size: 14px; background: #fff !important; }
       * { color: #000 !important; background: transparent !important; box-shadow: none !important; }
       table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
       th, td { border: 1px solid #000 !important; padding: 6px; text-align: center; }
@@ -1738,7 +1999,7 @@ function printReport(type) {
       .report-stat { border: 1px solid #000; padding: 10px; text-align: center; margin-bottom: 10px; }
       .report-stat .val { font-size: 1.5em; font-weight: bold; }
       .card { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px dashed #000; }
-      button, a { display: none !important; } /* إخفاء أي أزرار أو روابط */
+      button, a { display: none !important; }
     </style>
   </head><body>
     <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px;">
